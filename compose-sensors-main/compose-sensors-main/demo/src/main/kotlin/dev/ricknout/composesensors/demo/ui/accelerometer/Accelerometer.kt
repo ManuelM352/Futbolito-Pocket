@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Divider
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +30,7 @@ import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import dev.ricknout.composesensors.accelerometer.isAccelerometerSensorAvailable
 import dev.ricknout.composesensors.accelerometer.rememberAccelerometerSensorValueAsState
@@ -36,19 +38,21 @@ import dev.ricknout.composesensors.demo.model.Demo
 import dev.ricknout.composesensors.demo.ui.Demo
 import dev.ricknout.composesensors.demo.ui.NotAvailableDemo
 
-
-
 @Composable
 fun SoccerField() {
     if (isAccelerometerSensorAvailable()) {
         val sensorValue by rememberAccelerometerSensorValueAsState()
         val (x, y, z) = sensorValue.value
 
-        // Coliciones de la pantalla del de juego
-        val leftLimit = 60.dp //Derecha
+        val leftLimit = 60.dp // Derecha
         val rightLimit = 1020.dp
-        val topLimit = 60.dp //Arriba
+        val topLimit = 60.dp // Arriba
         val bottomLimit = 1940.dp
+
+        val obstacles = listOf(
+            RectObstacle(300.dp, 500.dp, 10.dp, 200.dp),
+            RectObstacle(500.dp, 200.dp, 200.dp, 10.dp)
+        )
 
         Demo(
             demo = Demo.ACCELEROMETER,
@@ -71,6 +75,11 @@ fun SoccerField() {
                 )
             }
 
+            // Check for collisions with obstacles
+            obstacles.forEach { obstacle ->
+                center = checkCollision(center, obstacle, radius)
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -90,24 +99,6 @@ fun SoccerField() {
                         .background(Color.White)
                 )
 
-                // Obstaculos
-                Box(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .offset(100.dp, 100.dp)
-                            .background(Color.Gray)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .offset(300.dp, 200.dp)
-                            .background(Color.Gray)
-                    )
-                }
-
                 // Campo de juego
                 Box(
                     modifier = Modifier
@@ -126,6 +117,17 @@ fun SoccerField() {
                     )
                 }
 
+                // Draw obstacles
+                obstacles.forEach { obstacle ->
+                    Box(
+                        modifier = Modifier
+                            .offset(obstacle.left, obstacle.top)
+                            .size(obstacle.width, obstacle.height)
+                            .background(Color.Red)
+                    )
+                }
+
+                // Draw the ball
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     drawCircle(
                         color = contentColor,
@@ -138,6 +140,41 @@ fun SoccerField() {
     }
 }
 
+data class RectObstacle(val left: Dp, val top: Dp, val width: Dp, val height: Dp)
+
+@Composable
+fun checkCollision(center: Offset, obstacle: RectObstacle, radius: Float): Offset {
+    val obstacleRect = with(LocalDensity.current) {
+        androidx.compose.ui.geometry.Rect(
+            left = obstacle.left.toPx(),
+            top = obstacle.top.toPx(),
+            right = obstacle.left.toPx() + obstacle.width.toPx(),
+            bottom = obstacle.top.toPx() + obstacle.height.toPx()
+        )
+    }
+
+    // Check for collision
+    val closestX = center.x.coerceIn(obstacleRect.left, obstacleRect.right)
+    val closestY = center.y.coerceIn(obstacleRect.top, obstacleRect.bottom)
+    val distanceX = center.x - closestX
+    val distanceY = center.y - closestY
+
+    if ((distanceX * distanceX + distanceY * distanceY) < (radius * radius)) {
+        // Collision detected, calculate new position after bounce
+        return when {
+            center.x < obstacleRect.left || center.x > obstacleRect.right -> {
+                // Horizontal bounce
+                Offset(center.x - distanceX, center.y)
+            }
+            center.y < obstacleRect.top || center.y > obstacleRect.bottom -> {
+                // Vertical bounce
+                Offset(center.x, center.y - distanceY)
+            }
+            else -> center
+        }
+    }
+    return center
+}
 
 
 @Composable
