@@ -4,15 +4,22 @@ import android.content.res.Configuration
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,6 +46,7 @@ import dev.ricknout.composesensors.demo.model.Demo
 import dev.ricknout.composesensors.demo.ui.Demo
 import dev.ricknout.composesensors.demo.ui.NotAvailableDemo
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SoccerField() {
     if (isAccelerometerSensorAvailable()) {
@@ -121,6 +129,8 @@ fun SoccerField() {
             RectObstacle(70.dp, 330.dp, 10.dp, 10.dp),
             RectObstacle(270.dp, 330.dp, 10.dp, 10.dp),
             RectObstacle(120.dp, 330.dp, 10.dp, 10.dp),
+
+
             // PORTERIA ARRIBA
             RectObstacle(145.dp, 665.dp, 5.dp, 60.dp),
             RectObstacle(245.dp, 665.dp, 5.dp, 60.dp),
@@ -189,107 +199,162 @@ fun SoccerField() {
         )
 
         val trampolines = listOf(
-            Trampoline(60.dp, 60.dp),
-            Trampoline(60.dp, 1840.dp),
-            Trampoline(920.dp, 60.dp),
-            Trampoline(920.dp, 1840.dp)
+            Trampoline(20.dp, 20.dp),
+            Trampoline(352.dp, 20.dp),
+            Trampoline(20.dp, 695.dp),
+            Trampoline(352.dp, 695.dp)
         )
 
-        Demo(
-            demo = Demo.ACCELEROMETER,
-            value = "X: $x m/s^2\nY: $y m/s^2\nZ: $z m/s^2",
-        ) {
-            var center by remember { mutableStateOf(Offset(rightLimit.value / 2, bottomLimit.value / 2)) }
-            val orientation = LocalConfiguration.current.orientation
-            val contentColor = LocalContentColor.current
-            val radius = with(LocalDensity.current) { 10.dp.toPx() }
+        var topGoals by remember { mutableStateOf(0) }
+        var bottomGoals by remember { mutableStateOf(0) }
+        var center by remember { mutableStateOf(Offset(rightLimit.value / 2, bottomLimit.value / 2)) }
 
-            center = if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                Offset(
-                    x = (center.x - x).coerceIn(leftLimit.value + radius, rightLimit.value - radius),
-                    y = (center.y + y).coerceIn(topLimit.value + radius, bottomLimit.value - radius),
-                )
-            } else {
-                Offset(
-                    x = (center.x + y).coerceIn(leftLimit.value + radius, rightLimit.value - radius),
-                    y = (center.y + x).coerceIn(topLimit.value + radius, bottomLimit.value - radius),
-                )
+        val topGoalArea = with(LocalDensity.current) {
+            androidx.compose.ui.geometry.Rect(
+                left = 145.dp.toPx(),
+                top = 0.dp.toPx(),
+                right = 245.dp.toPx(),
+                bottom = 60.dp.toPx()
+            )
+        }
+
+        val bottomGoalArea = with(LocalDensity.current) {
+            androidx.compose.ui.geometry.Rect(
+                left = 145.dp.toPx(),
+                top = 665.dp.toPx(),
+                right = 245.dp.toPx(),
+                bottom = 725.dp.toPx()
+            )
+        }
+
+        val orientation = LocalConfiguration.current.orientation
+        val contentColor = LocalContentColor.current
+        val radius = with(LocalDensity.current) { 10.dp.toPx() }
+
+        center = if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+            Offset(
+                x = (center.x - x).coerceIn(leftLimit.value + radius, rightLimit.value - radius),
+                y = (center.y + y).coerceIn(topLimit.value + radius, bottomLimit.value - radius),
+            )
+        } else {
+            Offset(
+                x = (center.x + y).coerceIn(leftLimit.value + radius, rightLimit.value - radius),
+                y = (center.y + x).coerceIn(topLimit.value + radius, bottomLimit.value - radius),
+            )
+        }
+
+        // Check for collisions with obstacles and trampolines
+        obstacles.forEach { obstacle ->
+            center = checkCollision(center, obstacle, radius)
+        }
+
+        trampolines.forEach { trampoline ->
+            center = checkTrampolineCollision(center, trampoline, radius)
+        }
+
+        // Check for goals
+        if (center.x in topGoalArea.left..topGoalArea.right && center.y in topGoalArea.top..topGoalArea.bottom) {
+            topGoals++
+            center = Offset(rightLimit.value / 2, bottomLimit.value / 2)
+        }
+
+        if (center.x in bottomGoalArea.left..bottomGoalArea.right && center.y in bottomGoalArea.top..bottomGoalArea.bottom) {
+            bottomGoals++
+            center = Offset(rightLimit.value / 2, bottomLimit.value / 2)
+        }
+
+        Scaffold(
+            topBar = {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Left Goal and Top Goals Counter
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp, 60.dp)
+                            .background(Color.White)
+                    ) {
+                        Text(
+                            text = "Top Goals: $topGoals",
+                            color = Color.Black,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                    // Right Goal and Bottom Goals Counter
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp, 60.dp)
+                            .background(Color.White)
+                    ) {
+                        Text(
+                            text = "Bottom Goals: $bottomGoals",
+                            color = Color.Black,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                }
             }
-
-            // Check for collisions with obstacles
-            obstacles.forEach { obstacle ->
-                center = checkCollision(center, obstacle, radius)
-            }
-
-            // Check for collisions with trampolines
-            trampolines.forEach { trampoline ->
-                center = checkTrampolineCollision(center, trampoline, radius)
-            }
-
-            Box(
+        ) { paddingValues ->
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Green)
+                    .padding(paddingValues)
             ) {
-                // Porterías
                 Box(
                     modifier = Modifier
-                        .size(100.dp, 60.dp)
-                        .align(Alignment.TopCenter)
-                        .background(Color.White)
-                )
-                Box(
-                    modifier = Modifier
-                        .size(100.dp, 60.dp)
-                        .align(Alignment.BottomCenter)
-                        .background(Color.White)
-                )
-
-                // Campo de juego
-                Box(
-                    modifier = Modifier
-                        .size(rightLimit, bottomLimit)
-                        .padding(20.dp)
-                        .background(Color.Transparent)
-                        .border(4.dp, Color.White)
+                        .fillMaxSize()
+                        .background(Color.Green)
                 ) {
-                    // Linea
-                    Divider(
+                    // Field Boundary
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .size(rightLimit, bottomLimit)
+                            .padding(20.dp)
+                            .background(Color.Transparent)
+                            .border(4.dp, Color.White)
                             .align(Alignment.Center)
-                            .height(4.dp),
-                        color = Color.White
-                    )
-                }
+                    ) {
+                        // Midline
+                        Divider(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.Center)
+                                .height(4.dp),
+                            color = Color.White
+                        )
+                    }
 
-                // Draw obstacles
-                obstacles.forEach { obstacle ->
-                    Box(
-                        modifier = Modifier
-                            .offset(obstacle.left, obstacle.top)
-                            .size(obstacle.width, obstacle.height)
-                            .background(Color.Gray)
-                    )
-                }
+                    // Draw obstacles
+                    obstacles.forEach { obstacle ->
+                        Box(
+                            modifier = Modifier
+                                .offset(obstacle.left, obstacle.top)
+                                .size(obstacle.width, obstacle.height)
+                                .background(Color.Gray)
+                        )
+                    }
 
-                // Draw trampolines
-                trampolines.forEach { trampoline ->
-                    Box(
-                        modifier = Modifier
-                            .offset(trampoline.left, trampoline.top)
-                            .size(40.dp, 40.dp)
-                            .background(Color.Yellow)
-                    )
-                }
+                    // Draw trampolines
+                    trampolines.forEach { trampoline ->
+                        Box(
+                            modifier = Modifier
+                                .offset(trampoline.left, trampoline.top)
+                                .size(20.dp, 10.dp)
+                                .background(Color.Yellow)
+                        )
+                    }
 
-                // Draw the ball
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawCircle(
-                        color = contentColor,
-                        radius = radius,
-                        center = center,
-                    )
+                    // Draw the ball
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        drawCircle(
+                            color = contentColor,
+                            radius = radius,
+                            center = center,
+                        )
+                    }
                 }
             }
         }
@@ -357,8 +422,8 @@ fun checkTrampolineCollision(center: Offset, trampoline: Trampoline, radius: Flo
     if ((distanceX * distanceX + distanceY * distanceY) < (radius * radius)) {
         // Collision detected with trampoline, add bounce effect
         return Offset(
-            x = center.x + (radius * 2) * kotlin.math.sign(distanceX),
-            y = center.y + (radius * 2) * kotlin.math.sign(distanceY)
+            x = center.x + (radius * 4) * kotlin.math.sign(distanceX),
+            y = center.y + (radius * 30) * kotlin.math.sign(distanceY)
         )
     }
     return center

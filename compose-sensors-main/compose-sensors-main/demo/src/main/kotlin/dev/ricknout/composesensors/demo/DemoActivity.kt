@@ -14,7 +14,6 @@ import dev.ricknout.composesensors.demo.ui.DemoNavigation
 import dev.ricknout.composesensors.demo.ui.DemoTheme
 import dev.ricknout.composesensors.demo.ui.accelerometer.SoccerField
 
-
 class DemoActivity : ComponentActivity() {
 
     private var demo by mutableStateOf(Demo.NONE)
