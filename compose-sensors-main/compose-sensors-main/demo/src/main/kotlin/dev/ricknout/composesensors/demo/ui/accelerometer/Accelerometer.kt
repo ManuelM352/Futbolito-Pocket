@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,6 +34,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -65,8 +67,8 @@ fun SoccerField() {
 
         val obstacles = listOf(
             // PORTERIA ARRIBA
-            RectObstacle(145.dp, 0.dp, 5.dp, 60.dp),
-            RectObstacle(245.dp, 0.dp, 5.dp, 60.dp),
+            RectObstacle(150.dp, 18.dp, 5.dp, 30.dp),
+            RectObstacle(237.dp, 18.dp, 5.dp, 30.dp),
             // VERTICALES PARTE ARRIBA
             RectObstacle(40.dp, 100.dp, 10.dp, 50.dp),
             RectObstacle(340.dp, 100.dp, 10.dp, 50.dp),
@@ -132,8 +134,8 @@ fun SoccerField() {
 
 
             // PORTERIA ARRIBA
-            RectObstacle(145.dp, 665.dp, 5.dp, 60.dp),
-            RectObstacle(245.dp, 665.dp, 5.dp, 60.dp),
+            RectObstacle(150.dp, 665.dp, 5.dp, 60.dp),
+            RectObstacle(237.dp, 665.dp, 5.dp, 60.dp),
             // VERTICALES PARTE ARRIBA
             RectObstacle(40.dp, 570.dp, 10.dp, 50.dp),
             RectObstacle(340.dp, 570.dp, 10.dp, 50.dp),
@@ -201,12 +203,12 @@ fun SoccerField() {
         val trampolines = listOf(
             Trampoline(20.dp, 20.dp),
             Trampoline(352.dp, 20.dp),
-            Trampoline(20.dp, 695.dp),
-            Trampoline(352.dp, 695.dp)
+            Trampoline(20.dp, 682.dp),
+            Trampoline(352.dp, 682.dp)
         )
 
-        var topGoals by remember { mutableStateOf(0) }
-        var bottomGoals by remember { mutableStateOf(0) }
+        var ArribaGols by remember { mutableStateOf(0) }
+        var AbajoGols by remember { mutableStateOf(0) }
         var center by remember { mutableStateOf(Offset(rightLimit.value / 2, bottomLimit.value / 2)) }
 
         val topGoalArea = with(LocalDensity.current) {
@@ -243,7 +245,7 @@ fun SoccerField() {
             )
         }
 
-        // Check for collisions with obstacles and trampolines
+        // Verificar la colisión entre los trampolines
         obstacles.forEach { obstacle ->
             center = checkCollision(center, obstacle, radius)
         }
@@ -252,14 +254,14 @@ fun SoccerField() {
             center = checkTrampolineCollision(center, trampoline, radius)
         }
 
-        // Check for goals
+        // Verificar los goles
         if (center.x in topGoalArea.left..topGoalArea.right && center.y in topGoalArea.top..topGoalArea.bottom) {
-            topGoals++
+            ArribaGols++
             center = Offset(rightLimit.value / 2, bottomLimit.value / 2)
         }
 
         if (center.x in bottomGoalArea.left..bottomGoalArea.right && center.y in bottomGoalArea.top..bottomGoalArea.bottom) {
-            bottomGoals++
+            AbajoGols++
             center = Offset(rightLimit.value / 2, bottomLimit.value / 2)
         }
 
@@ -271,28 +273,48 @@ fun SoccerField() {
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Left Goal and Top Goals Counter
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp, 60.dp)
-                            .background(Color.White)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Box(
+                            modifier = Modifier
+                                .size(100.dp, 35.dp)
+                                .background(Color.White)
+                        )
                         Text(
-                            text = "Top Goals: $topGoals",
+                            text = "Marcador superior: ",
                             color = Color.Black,
-                            modifier = Modifier.align(Alignment.Center)
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                        )
+                        Text(
+                            text = "$ArribaGols",
+                            color = Color.White,
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .background(Color.Black)
                         )
                     }
-                    // Right Goal and Bottom Goals Counter
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp, 60.dp)
-                            .background(Color.White)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Box(
+                            modifier = Modifier
+                                .size(100.dp, 35.dp)
+                                .background(Color.White)
+                        )
                         Text(
-                            text = "Bottom Goals: $bottomGoals",
+                            text = "Marcador inferior: ",
                             color = Color.Black,
-                            modifier = Modifier.align(Alignment.Center)
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                        )
+                        Text(
+                            text = "$AbajoGols",
+                            color = Color.White,
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .background(Color.Black)
                         )
                     }
                 }
@@ -308,7 +330,6 @@ fun SoccerField() {
                         .fillMaxSize()
                         .background(Color.Green)
                 ) {
-                    // Field Boundary
                     Box(
                         modifier = Modifier
                             .size(rightLimit, bottomLimit)
@@ -317,7 +338,6 @@ fun SoccerField() {
                             .border(4.dp, Color.White)
                             .align(Alignment.Center)
                     ) {
-                        // Midline
                         Divider(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -325,9 +345,59 @@ fun SoccerField() {
                                 .height(4.dp),
                             color = Color.White
                         )
+
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            drawCircle(
+                                color = Color.White,
+                                radius = 50.dp.toPx(),
+                                center = Offset(size.width / 2, size.height / 2),
+                                style = Stroke(width = 4.dp.toPx())
+                            )
+                        }
+
+                        val penaltyAreaWidth = 200.dp
+                        val penaltyAreaHeight = 100.dp
+                        val goalWidth = 100.dp
+                        val goalHeight = 60.dp
+
+                        Box(
+                            modifier = Modifier
+                                .size(penaltyAreaWidth, penaltyAreaHeight)
+                                .align(Alignment.TopCenter)
+                                .offset(y = 20.dp)
+                                .background(Color.Transparent)
+                                .border(4.dp, Color.White)
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .size(penaltyAreaWidth, penaltyAreaHeight)
+                                .align(Alignment.BottomCenter)
+                                .offset(y = (-20).dp)
+                                .background(Color.Transparent)
+                                .border(4.dp, Color.White)
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .size(goalWidth, goalHeight)
+                                .align(Alignment.TopCenter)
+                                .offset(y = (-goalHeight / 2))
+                                .background(Color.Gray)
+                                .border(2.dp, Color.White)
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .size(goalWidth, goalHeight)
+                                .align(Alignment.BottomCenter)
+                                .offset(y = (goalHeight / 2))
+                                .background(Color.Gray)
+                                .border(2.dp, Color.White)
+                        )
                     }
 
-                    // Draw obstacles
+
                     obstacles.forEach { obstacle ->
                         Box(
                             modifier = Modifier
