@@ -58,7 +58,7 @@ fun SoccerField() {
         val leftLimit = 60.dp // Derecha
         val rightLimit = 1020.dp
         val topLimit = 60.dp // Arriba
-        val bottomLimit = 1940.dp
+        val bottomLimit = 1920.dp
 
         // Izquierda + / Derecha -
         // Abajo + / Arriba -
@@ -133,9 +133,9 @@ fun SoccerField() {
             RectObstacle(120.dp, 330.dp, 10.dp, 10.dp),
 
 
-            // PORTERIA ARRIBA
-            RectObstacle(150.dp, 665.dp, 5.dp, 60.dp),
-            RectObstacle(237.dp, 665.dp, 5.dp, 60.dp),
+            // PORTERIA ABAJO
+            RectObstacle(150.dp, 675.dp, 5.dp, 60.dp),
+            RectObstacle(237.dp, 675.dp, 5.dp, 60.dp),
             // VERTICALES PARTE ARRIBA
             RectObstacle(40.dp, 570.dp, 10.dp, 50.dp),
             RectObstacle(340.dp, 570.dp, 10.dp, 50.dp),
@@ -203,8 +203,8 @@ fun SoccerField() {
         val trampolines = listOf(
             Trampoline(20.dp, 20.dp),
             Trampoline(352.dp, 20.dp),
-            Trampoline(20.dp, 682.dp),
-            Trampoline(352.dp, 682.dp)
+            Trampoline(20.dp, 687.dp),
+            Trampoline(352.dp, 687.dp)
         )
 
         var ArribaGols by remember { mutableStateOf(0) }
@@ -278,7 +278,7 @@ fun SoccerField() {
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(100.dp, 35.dp)
+                                .size(100.dp, 30.dp)
                                 .background(Color.White)
                         )
                         Text(
@@ -300,7 +300,7 @@ fun SoccerField() {
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(100.dp, 35.dp)
+                                .size(100.dp, 30.dp)
                                 .background(Color.White)
                         )
                         Text(
@@ -407,7 +407,6 @@ fun SoccerField() {
                         )
                     }
 
-                    // Draw trampolines
                     trampolines.forEach { trampoline ->
                         Box(
                             modifier = Modifier
@@ -417,10 +416,9 @@ fun SoccerField() {
                         )
                     }
 
-                    // Draw the ball
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         drawCircle(
-                            color = contentColor,
+                            color = Color.White,
                             radius = radius,
                             center = center,
                         )
@@ -445,24 +443,20 @@ fun checkCollision(center: Offset, obstacle: RectObstacle, radius: Float): Offse
         )
     }
 
-    // Check for collision
     val closestX = center.x.coerceIn(obstacleRect.left, obstacleRect.right)
     val closestY = center.y.coerceIn(obstacleRect.top, obstacleRect.bottom)
     val distanceX = center.x - closestX
     val distanceY = center.y - closestY
 
     if ((distanceX * distanceX + distanceY * distanceY) < (radius * radius)) {
-        // Collision detected, calculate new position after bounce
         val overlapX = radius - kotlin.math.abs(distanceX)
         val overlapY = radius - kotlin.math.abs(distanceY)
         return if (overlapX < overlapY) {
-            // Horizontal bounce
             Offset(
                 x = if (distanceX < 0) center.x - overlapX else center.x + overlapX,
                 y = center.y
             )
         } else {
-            // Vertical bounce
             Offset(
                 x = center.x,
                 y = if (distanceY < 0) center.y - overlapY else center.y + overlapY
@@ -483,14 +477,12 @@ fun checkTrampolineCollision(center: Offset, trampoline: Trampoline, radius: Flo
         )
     }
 
-    // Check for collision
     val closestX = center.x.coerceIn(trampolineRect.left, trampolineRect.right)
     val closestY = center.y.coerceIn(trampolineRect.top, trampolineRect.bottom)
     val distanceX = center.x - closestX
     val distanceY = center.y - closestY
 
     if ((distanceX * distanceX + distanceY * distanceY) < (radius * radius)) {
-        // Collision detected with trampoline, add bounce effect
         return Offset(
             x = center.x + (radius * 4) * kotlin.math.sign(distanceX),
             y = center.y + (radius * 30) * kotlin.math.sign(distanceY)
